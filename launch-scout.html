@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Launch Scout — сканер запусков и нарративов</title>
+<meta name="theme-color" content="#0A0F1A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Launch Scout">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" href="data:image/png;base64,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">
+<style>
+  :root {
+    --ink: #0A0F1A; --panel: #101827; --line: #1E2A3D;
+    --signal: #4EE1A0; --warn: #F5B84D; --danger: #F06A6A;
+    --base-blue: #2E6BFF; --sol: #A566FF; --eth: #8A92B2;
+    --text: #D6E2F0; --dim: #6B7E96;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ink); color: var(--text);
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+    padding-bottom: 40px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(10,15,26,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: max(14px, env(safe-area-inset-top)) 16px 12px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--signal); }
+  .dot.run { animation: pulse 1.6s infinite; }
+  .dot.err { background: var(--danger); animation: none; }
+  .dot.paused { background: var(--warn); animation: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .brand { font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+  .sub { font-size: 11px; color: var(--dim); }
+  .spacer { flex: 1; }
+  button, input {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; font-family: inherit; font-size: 12px;
+  }
+  button { cursor: pointer; }
+  button.on { color: var(--signal); background: var(--line); }
+  #pauseBtn.paused { background: var(--signal); color: var(--ink); border-color: var(--signal); font-weight: 700; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+  .nets { display: flex; gap: 6px; padding: 10px 16px 0; flex-wrap: wrap; }
+  .nets button.sel { border-color: var(--text); color: var(--text); background: var(--line); }
+  .netdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .nd-base { background: var(--base-blue); } .nd-solana { background: var(--sol); }
+  .nd-eth { background: var(--eth); } .nd-all { background: var(--signal); }
+
+  /* Табло алертов: кандидат (зелёный) и нарратив (янтарный) */
+  #alertBoard {
+    display: none; margin: 14px 16px 0; padding: 18px 16px;
+    border: 1px solid var(--signal); border-radius: 12px;
+    background: linear-gradient(180deg, rgba(78,225,160,.10), rgba(78,225,160,.02));
+    text-align: center;
+  }
+  #alertBoard.narrative {
+    border-color: var(--warn);
+    background: linear-gradient(180deg, rgba(245,184,77,.10), rgba(245,184,77,.02));
+  }
+  #alertBoard.show { display: block; animation: boardIn .4s ease; }
+  @keyframes boardIn { from { transform: translateY(-10px); opacity: 0 } }
+  #alertLabel { font-size: 11px; letter-spacing: 3px; color: var(--signal); }
+  .narrative #alertLabel { color: var(--warn); }
+  #alertName {
+    font-size: clamp(34px, 10vw, 64px); font-weight: 800; line-height: 1.1;
+    color: var(--signal); margin: 6px 0 2px; word-break: break-word;
+    animation: nameFlash 1s ease 3;
+  }
+  .narrative #alertName { color: var(--warn); }
+  @keyframes nameFlash { 0%,100%{opacity:1} 50%{opacity:.35} }
+  #alertMeta { font-size: 12px; color: var(--text); line-height: 1.7; }
+  #alertBoard a { color: var(--base-blue); }
+  #alertSec { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important } }
+
+  /* Нарративный модуль */
+  details.narr {
+    margin: 12px 16px 0; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel);
+  }
+  details.narr summary {
+    padding: 12px 14px; cursor: pointer; font-size: 13px; font-weight: 700;
+    color: var(--warn); list-style: none;
+  }
+  details.narr summary::before { content: "▸ "; }
+  details.narr[open] summary::before { content: "▾ "; }
+  .narr-body { padding: 0 14px 14px; font-size: 12px; }
+  .narr-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .narr-row input { flex: 1; min-width: 0; }
+  .narr-hint { color: var(--dim); line-height: 1.6; margin-top: 6px; }
+  .src-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 0;
+    border-bottom: 1px dashed var(--line); word-break: break-all;
+  }
+  .src-item .del { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 14px; padding: 2px 6px; }
+  #narrLog { margin-top: 8px; color: var(--dim); max-height: 130px; overflow-y: auto; line-height: 1.6; }
+
+  .strip {
+    display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 16px;
+    font-size: 12px; color: var(--dim); border-bottom: 1px solid var(--line);
+  }
+  .strip b { color: var(--text); }
+  #errBox {
+    display: none; margin: 12px 16px 0; padding: 10px 14px;
+    background: rgba(240,106,106,.08); border: 1px solid rgba(240,106,106,.35);
+    border-radius: 8px; font-size: 12px; color: var(--danger);
+  }
+  main { padding: 12px 12px; }
+  .empty { text-align: center; padding: 60px 20px; color: var(--dim); font-size: 13px; line-height: 1.6; }
+  .card {
+    display: block; padding: 12px 14px; margin-bottom: 8px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    text-decoration: none; color: inherit; font-size: 13px;
+  }
+  .card:active, .card:hover { background: #141E30; }
+  .card.tier-candidate { border-color: var(--signal); box-shadow: 0 0 14px rgba(78,225,160,.15); }
+  .card.tier-watch { border-color: rgba(245,184,77,.5); }
+  .card.tier-flag { border-color: rgba(240,106,106,.5); opacity: .8; }
+  .card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .tk { font-size: 17px; font-weight: 800; }
+  .tier-candidate .tk { color: var(--signal); }
+  .tier-watch .tk { color: var(--warn); }
+  .tier-flag .tk { color: var(--danger); }
+  .nettag { font-size: 10px; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--line); }
+  .nt-base { color: var(--base-blue); } .nt-solana { color: var(--sol); } .nt-eth { color: var(--eth); }
+  .nm { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; }
+  .score { margin-left: auto; font-weight: 800; font-size: 15px; }
+  .metrics { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 12px; color: var(--dim); }
+  .metrics b { color: var(--text); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .chip {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px;
+    border: 1px solid var(--line); color: var(--dim);
+  }
+  .chip.ok { border-color: rgba(78,225,160,.5); color: var(--signal); }
+  .chip.bad { border-color: rgba(240,106,106,.5); color: var(--danger); }
+  .chip.warn2 { border-color: rgba(245,184,77,.5); color: var(--warn); }
+  .foot { margin: 20px 16px 0; font-size: 11px; color: var(--dim); line-height: 1.6; }
+
+  /* Статистика и журнал исходов */
+  details.stats {
+    margin: 12px 16px 0; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel);
+  }
+  details.stats summary {
+    padding: 12px 14px; cursor: pointer; font-size: 13px; font-weight: 700;
+    color: var(--base-blue); list-style: none;
+  }
+  details.stats summary::before { content: "▸ "; }
+  details.stats[open] summary::before { content: "▾ "; }
+  .stats-body { padding: 0 14px 14px; font-size: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .stat-cell { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .stat-cell .v { font-size: 18px; font-weight: 800; }
+  .stat-cell .l { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .v.pos { color: var(--signal); } .v.neg { color: var(--danger); }
+  .jr-row {
+    display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 7px 0;
+    border-bottom: 1px dashed var(--line); align-items: baseline;
+  }
+  .jr-row .s { font-weight: 700; }
+  .jr-row .mult { font-weight: 800; margin-left: auto; }
+  .jr-hint { color: var(--dim); line-height: 1.6; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="dot run" id="dot" aria-hidden="true"></span>
+    <div>
+      <div class="brand">LAUNCH SCOUT</div>
+      <div class="sub" id="statusLine">Запуск…</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button id="notifBtn">🔕 Уведомления</button>
+  <button id="soundBtn">🔕 Звук</button>
+  <button id="pauseBtn">⏸ Пауза</button>
+</header>
+
+<div class="nets" id="netBar" role="group" aria-label="Фильтр сетей">
+  <button data-net="all" class="sel"><span class="netdot nd-all"></span>Все сети</button>
+  <button data-net="base"><span class="netdot nd-base"></span>Base</button>
+  <button data-net="solana"><span class="netdot nd-solana"></span>Solana</button>
+  <button data-net="eth"><span class="netdot nd-eth"></span>Ethereum</button>
+</div>
+
+<div id="alertBoard" role="alert">
+  <div id="alertLabel"></div>
+  <div id="alertName"></div>
+  <div id="alertMeta"></div>
+  <div id="alertSec"></div>
+</div>
+
+<!-- ── Нарративный модуль ── -->
+<details class="narr" open>
+  <summary>НАРРАТИВ · посты инфлюенсеров</summary>
+  <div class="narr-body">
+    <div class="narr-row">
+      <input id="quickCheck" placeholder="тикер, $кэштег или адрес контракта из поста"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="quickBtn">Проверить сейчас</button>
+    </div>
+    <div class="narr-row">
+      <input id="srcInput" placeholder="URL RSS-ленты аккаунта (rss.app и др.)"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="srcAdd">Добавить</button>
+    </div>
+    <div id="srcList"></div>
+    <div class="narr-hint">
+      Ленты опрашиваются каждые 90 сек. Из новых постов извлекаются $кэштеги и адреса
+      контрактов — найденный токен поднимает янтарный алерт <b>без порогов ликвидности</b>,
+      но с экспресс-проверкой контракта (GoPlus): honeypot, налог на продажу, право минта.
+      Как добавить источник: rss.app → создать ленту по нику аккаунта X → вставить URL сюда.
+      Для Truth Social используйте RSS публичных зеркал-архивов.
+    </div>
+    <div id="narrLog"></div>
+  </div>
+</details>
+
+<!-- ── Статистика и журнал исходов ── -->
+<details class="stats">
+  <summary>СТАТИСТИКА · журнал исходов и бумажный PnL</summary>
+  <div class="stats-body">
+    <div class="stat-grid" id="statGrid"></div>
+    <div id="journal"></div>
+    <div class="jr-hint">
+      Каждый алерт фиксируется с ценой входа. Через 24ч и 7д приложение само подтягивает цену
+      и считает мультипликатор. Бумажная сделка: $100 на алерт с учётом проскальзывания по
+      ликвидности (2–10%), правило выхода — 50% на 2x, остаток по цене 7-го дня.
+      Замер по чекпойнтам, не по тикам: реальный пик мог быть выше. Открывайте приложение
+      хотя бы раз в день, чтобы чекпойнты снимались вовремя.
+    </div>
+    <div style="margin-top:10px; display:flex; gap:6px;">
+      <button id="exportBtn">Экспорт журнала (JSON)</button>
+      <button id="clearBtn">Очистить журнал</button>
+    </div>
+  </div>
+</details>
+
+<div class="strip">
+  <span>Под наблюдением: <b id="cntAll">0</b></span>
+  <span>Кандидатов: <b id="cntCand" style="color:var(--signal)">0</b></span>
+  <span>Флагов: <b id="cntFlag" style="color:var(--danger)">0</b></span>
+  <span>Источников: <b id="cntSrc">0</b></span>
+</div>
+
+<div id="errBox"></div>
+
+<main id="list">
+  <div class="empty">
+    Сканирую новые пулы Base, Solana и Ethereum…<br>
+    Маркеры зреют часами — свежие токены сначала попадают<br>в наблюдение и подсвечиваются по мере набора сигналов.
+  </div>
+</main>
+
+<div class="foot">
+  Два контура: (1) скоринг запусков по маркерам когортного анализа — пороги по сетям,
+  покупатели, перевес покупок, анти-маркеры; (2) нарративный контур — токены из постов
+  инфлюенсеров алертятся без порогов, но проходят экспресс-проверку контракта GoPlus.
+  Проверка ловит скам в коде (honeypot, запредельный налог на продажу, право минта,
+  скрытый прокси; на Solana — mint/freeze authority), но НЕ ловит намерение команды слить
+  честный контракт. Торговля на постах инфлюенсеров — режим повышенного риска: часто
+  покупающие после поста становятся ликвидностью для выхода. Не инвестиционный совет.
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var API = "https://api.geckoterminal.com/api/v2";
+  var GOPLUS = "https://api.gopluslabs.io/api/v1";
+  var PROXY = "https://api.allorigins.win/raw?url=";
+  var POLL_MS = 60000, FEED_MS = 90000;
+
+  var NETS = {
+    base:   { label: "Base",     liq: [50000, 500000],  gp: "8453" },
+    solana: { label: "Solana",   liq: [30000, 300000],  gp: "solana" },
+    eth:    { label: "Ethereum", liq: [100000, 1000000], gp: "1" }
+  };
+
+  var pools = {}, alerted = {};
+  var trendSymbols = { base: {}, solana: {}, eth: {} };
+  var netFilter = "all";
+  var running = true, sound = false, notify = false;
+  var timer = null, feedTimer = null, audioCtx = null;
+  var sources = [], seenItems = {};
+
+  // Память источников: работает на сайте, тихо отключается там, где хранилище недоступно
+  var store = {
+    get: function () {
+      try { return JSON.parse(localStorage.getItem("scout_sources") || "[]"); }
+      catch (e) { return []; }
+    },
+    set: function (v) {
+      try { localStorage.setItem("scout_sources", JSON.stringify(v)); } catch (e) {}
+    }
+  };
+
+  // ── Журнал исходов и бумажный PnL ──────────────────────
+  var journal = [];
+  var lastOutcomeCheck = 0;
+  var jstore = {
+    get: function () {
+      try { return JSON.parse(localStorage.getItem("scout_journal") || "[]"); }
+      catch (e) { return []; }
+    },
+    set: function (v) {
+      try { localStorage.setItem("scout_journal", JSON.stringify(v)); } catch (e) {}
+    }
+  };
+  function slip(liq) { return liq < 50000 ? 0.10 : liq < 250000 ? 0.05 : 0.02; }
+
+  function addJournal(p, contour) {
+    var a = p.attributes;
+    var px = parseFloat(a.base_token_price_usd);
+    if (!px || !p._tokAddr) return;
+    // не дублируем один токен в одном контуре
+    for (var i = 0; i < journal.length; i++) {
+      if (journal[i].tok === p._tokAddr && journal[i].contour === contour) return;
+    }
+    journal.push({
+      t: Date.now(), net: p._net, sym: p._sym, name: p._name,
+      pool: p._addr, tok: p._tokAddr, px: px,
+      liq: parseFloat(a.reserve_in_usd) || 0,
+      contour: contour, px24: null, px7: null
+    });
+    jstore.set(journal);
+    renderStats();
+  }
+
+  // Чекпойнты: раз в 10 минут подтягиваем цены для записей, которым пора
+  function maybeCheckOutcomes() {
+    if (Date.now() - lastOutcomeCheck < 600000) return;
+    lastOutcomeCheck = Date.now();
+    var due = { base: [], solana: [], eth: [] };
+    journal.forEach(function (j) {
+      var ageH = (Date.now() - j.t) / 3600000;
+      if ((ageH >= 24 && j.px24 == null) || (ageH >= 168 && j.px7 == null)) {
+        if (due[j.net] && due[j.net].indexOf(j.pool) === -1) due[j.net].push(j.pool);
+      }
+    });
+    Object.keys(due).forEach(function (net) {
+      if (!due[net].length) return;
+      var addrs = due[net].slice(0, 30).join(",");
+      getJson(API + "/networks/" + net + "/pools/multi/" + addrs)
+        .then(function (jn) {
+          var prices = {};
+          (jn.data || []).forEach(function (p) {
+            prices[p.attributes.address.toLowerCase()] =
+              parseFloat(p.attributes.base_token_price_usd) || 0;
+          });
+          var changed = false;
+          journal.forEach(function (j) {
+            if (j.net !== net) return;
+            var cur = prices[j.pool.toLowerCase()];
+            if (cur == null) cur = 0; // пул исчез из API = фактически мёртв
+            var ageH = (Date.now() - j.t) / 3600000;
+            if (ageH >= 24 && j.px24 == null) { j.px24 = cur; changed = true; }
+            if (ageH >= 168 && j.px7 == null) { j.px7 = cur; changed = true; }
+          });
+          if (changed) { jstore.set(journal); renderStats(); }
+        }).catch(function () {});
+    });
+  }
+
+  // Бумажная сделка: $100, слип по ликвидности, выход 50% на 2x, остаток по 7д
+  function paperPnl(j) {
+    var s = slip(j.liq);
+    var entryEff = j.px * (1 + s);
+    var qty = 100 / entryEff;
+    var last = j.px7 != null ? j.px7 : j.px24;
+    if (last == null) return null;
+    var cash = 0, rest = qty;
+    var peak = Math.max(j.px24 || 0, j.px7 || 0);
+    if (peak >= entryEff * 2) {
+      cash += (qty / 2) * (entryEff * 2) * (1 - s);
+      rest = qty / 2;
+    }
+    return cash + rest * last * (1 - s) - 100;
+  }
+
+  function renderStats() {
+    var grid = document.getElementById("statGrid");
+    var jr = document.getElementById("journal");
+    if (!grid) return;
+    var byContour = { scoring: { n: 0, x2: 0, x3: 0, dead: 0 }, narrative: { n: 0, x2: 0, x3: 0, dead: 0 } };
+    var checked = 0, pnl = 0, pnlN = 0;
+    journal.forEach(function (j) {
+      var c = byContour[j.contour] || byContour.narrative;
+      c.n++;
+      var peak = Math.max(j.px24 || 0, j.px7 || 0);
+      if (j.px24 != null || j.px7 != null) {
+        checked++;
+        if (peak >= j.px * 2) c.x2++;
+        if (peak >= j.px * 3) c.x3++;
+        var last = j.px7 != null ? j.px7 : j.px24;
+        if (last <= j.px * 0.2) c.dead++;
+        var p = paperPnl(j);
+        if (p != null) { pnl += p; pnlN++; }
+      }
+    });
+    function cell(v, l, cls) {
+      return '<div class="stat-cell"><div class="v ' + (cls || "") + '">' + v + '</div><div class="l">' + l + '</div></div>';
+    }
+    var s = byContour.scoring, n = byContour.narrative;
+    grid.innerHTML =
+      cell(journal.length, "алертов всего") +
+      cell(checked, "прошло чекпойнт") +
+      cell(s.n ? (s.x3 + "/" + s.n) : "—", "3x · скоринг") +
+      cell(n.n ? (n.x3 + "/" + n.n) : "—", "3x · нарратив") +
+      cell(s.dead + n.dead, "умерло (−80%+)") +
+      cell((pnl >= 0 ? "+" : "") + "$" + pnl.toFixed(0),
+           "бумажный PnL (" + pnlN + " сделок)", pnl >= 0 ? "pos" : "neg");
+    jr.innerHTML = journal.slice(-25).reverse().map(function (j) {
+      var peak = Math.max(j.px24 || 0, j.px7 || 0);
+      var m = peak ? (peak / j.px) : null;
+      var mtxt = m == null ? "ждём 24ч" : "×" + m.toFixed(2);
+      var cls = m == null ? "" : m >= 2 ? "v pos" : m <= 0.5 ? "v neg" : "";
+      return '<div class="jr-row">' +
+        '<span class="s">' + esc(j.sym) + '</span>' +
+        '<span class="nettag nt-' + j.net + '">' + NETS[j.net].label + '</span>' +
+        '<span style="color:var(--dim)">' + (j.contour === "scoring" ? "скоринг" : "нарратив") +
+        ' · ' + new Date(j.t).toLocaleDateString() + '</span>' +
+        '<span class="mult ' + cls + '">' + mtxt + '</span>' +
+      '</div>';
+    }).join("");
+  }
+
+  // Ссылки для ручной проверки деплоера и связей кошельков
+  function deployerLinks(net, tokAddr) {
+    if (!tokAddr) return "";
+    var scan = { base: "https://basescan.org/token/", eth: "https://etherscan.io/token/",
+                 solana: "https://solscan.io/token/" }[net] + tokAddr;
+    var bub = "https://app.bubblemaps.io/" + (net === "solana" ? "sol" : net) + "/token/" + tokAddr;
+    return ' · <a href="' + scan + '" target="_blank" rel="noopener">деплоер/холдеры →</a>' +
+           ' · <a href="' + bub + '" target="_blank" rel="noopener">Bubblemaps →</a>';
+  }
+
+  // План выхода: считается от цены на момент алерта
+  function exitPlan(px) {
+    px = parseFloat(px);
+    if (!px) return "";
+    function f(n) { return n >= 1 ? "$" + n.toFixed(4) : n >= 0.0001 ? "$" + n.toFixed(6) : "$" + n.toExponential(2); }
+    return '<br>План выхода: 50% на 2x (' + f(px * 2) + ') · стоп −50% (' + f(px * 0.5) +
+           ') · остаток — трейлинг';
+  }
+
+  // ── Утилиты ────────────────────────────────────────────
+  function usd(n) {
+    n = parseFloat(n);
+    if (isNaN(n)) return "—";
+    if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return "$" + (n / 1e3).toFixed(1) + "K";
+    return "$" + n.toFixed(0);
+  }
+  function age(ts) {
+    if (!ts) return "—";
+    var m = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (m < 60) return m + "м";
+    var h = Math.floor(m / 60);
+    if (h < 48) return h + "ч";
+    return Math.floor(h / 24) + "д";
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function beep(freq) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = freq || 880;
+      g.gain.setValueAtTime(0.14, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.5);
+    } catch (e) {}
+  }
+  function getJson(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("API " + r.status);
+      return r.json();
+    });
+  }
+  function log(msg) {
+    var el = document.getElementById("narrLog");
+    el.innerHTML = "[" + new Date().toLocaleTimeString() + "] " + msg + "<br>" + el.innerHTML;
+  }
+
+  // ── Скоринг запусков (контур 1) ────────────────────────
+  function evaluate(p) {
+    var a = p.attributes, net = NETS[p._net];
+    var liq = parseFloat(a.reserve_in_usd) || 0;
+    var fdv = parseFloat(a.fdv_usd) || 0;
+    var vol24 = parseFloat((a.volume_usd || {}).h24) || 0;
+    var t24 = (a.transactions || {}).h24 || {};
+    var t1 = (a.transactions || {}).h1 || {};
+    var buyers = t24.buyers || 0, buys = t24.buys || 0, sells = t24.sells || 0;
+    var ch1 = parseFloat((a.price_change_percentage || {}).h1) || 0;
+    var ageH = (Date.now() - new Date(a.pool_created_at).getTime()) / 3600000;
+    var sym = (p._sym || "").toUpperCase();
+
+    var score = 0, chips = [], flags = [];
+    if (trendSymbols[p._net][sym] && p._addr !== trendSymbols[p._net][sym]) flags.push("КЛОН тикера из тренда");
+    if (ch1 > 200 && buyers < 300) flags.push("памп без покупателей");
+    if (liq < 2000 && vol24 > 20000) flags.push("ликвидность слита");
+
+    if (liq >= net.liq[1]) { score += 25; chips.push("ликв ≥" + usd(net.liq[1])); }
+    else if (liq >= net.liq[0]) { score += 15; chips.push("ликв ≥" + usd(net.liq[0])); }
+    if (buyers >= 500) { score += 25; chips.push("покупателей 500+"); }
+    else if (buyers >= 100) { score += 15; chips.push("покупателей 100+"); }
+    if (sells > 0 && buys / sells >= 1.2) { score += 15; chips.push("покупки > продажи"); }
+    if (liq > 0 && vol24 / liq >= 0.3) { score += 10; chips.push("объём/ликв ≥0.3"); }
+    if (ageH >= 6 && (t1.buys || 0) + (t1.sells || 0) > 0) { score += 10; chips.push("живёт 6ч+"); }
+    if (fdv >= 100000 && fdv <= 500000000) { score += 10; chips.push("FDV адекватный"); }
+    if (ageH >= 24 && buyers >= 300) { score += 5; chips.push("сутки + люди"); }
+
+    var tier = "quiet";
+    if (flags.length) tier = "flag";
+    else if (score >= 60) tier = "candidate";
+    else if (score >= 35) tier = "watch";
+    return { score: flags.length ? 0 : score, tier: tier, chips: chips, flags: flags,
+             liq: liq, fdv: fdv, vol24: vol24, buyers: buyers, buys: buys, sells: sells };
+  }
+
+  function indexTokens(json) {
+    var map = {};
+    (json.included || []).forEach(function (inc) {
+      if (inc.type === "token") map[inc.id] = inc.attributes;
+    });
+    return map;
+  }
+  function decorate(p, tokens) {
+    var a = p.attributes;
+    var rel = (((p.relationships || {}).base_token || {}).data || {}).id;
+    var tk = tokens[rel] || {};
+    p._sym = tk.symbol || (a.name || "").split("/")[0].trim();
+    p._name = tk.name || a.name || "";
+    p._addr = a.address;
+    p._tokAddr = tk.address || (rel ? rel.split("_").slice(1).join("_") : null);
+    return p;
+  }
+  function absorb(json, isTrending, netId) {
+    var tokens = indexTokens(json);
+    (json.data || []).forEach(function (p) {
+      decorate(p, tokens);
+      p._net = netId;
+      var sym = (p._sym || "").toUpperCase();
+      if (isTrending && sym && !trendSymbols[netId][sym]) trendSymbols[netId][sym] = p._addr;
+      var ageDays = (Date.now() - new Date(p.attributes.pool_created_at).getTime()) / 86400000;
+      if (ageDays <= 60) pools[netId + "_" + p._addr] = p;
+    });
+  }
+
+  function poll() {
+    setStatus("Сканирую 3 сети…");
+    var jobs = [];
+    Object.keys(NETS).forEach(function (net) {
+      jobs.push(getJson(API + "/networks/" + net + "/new_pools?include=base_token")
+        .then(function (j) { absorb(j, false, net); }).catch(function () {}));
+      jobs.push(getJson(API + "/networks/" + net + "/trending_pools?include=base_token")
+        .then(function (j) { absorb(j, true, net); }).catch(function () {}));
+    });
+    Promise.all(jobs).then(function () {
+      if (!Object.keys(pools).length) showError("Данные не пришли ни по одной сети. Повторю через минуту.");
+      else hideError();
+      setStatus("Слежу за 3 сетями + " + sources.length + " лент · " + new Date().toLocaleTimeString());
+      render();
+      maybeCheckOutcomes();
+    });
+  }
+
+  // ── Экспресс-проверка контракта (GoPlus) ───────────────
+  function securityCheck(net, tokenAddr) {
+    if (!tokenAddr) return Promise.resolve(null);
+    var url = net === "solana"
+      ? GOPLUS + "/solana/token_security?contract_addresses=" + tokenAddr
+      : GOPLUS + "/token_security/" + NETS[net].gp + "?contract_addresses=" + tokenAddr;
+    return getJson(url).then(function (j) {
+      var res = j.result || {};
+      var key = Object.keys(res)[0];
+      if (!key) return null;
+      var d = res[key], out = [];
+      if (net === "solana") {
+        var mint = d.mintable || {}, frz = d.freezable || {};
+        out.push(mint.status === "1"
+          ? { t: "минт НЕ отозван", bad: true } : { t: "минт отозван", bad: false });
+        out.push(frz.status === "1"
+          ? { t: "freeze-власть активна", bad: true } : { t: "freeze отозван", bad: false });
+        if (d.transfer_fee && parseFloat((d.transfer_fee.fee_rate || 0)) > 0)
+          out.push({ t: "комиссия на трансфер", bad: true });
+      } else {
+        if (d.is_honeypot === "1") out.push({ t: "HONEYPOT — продажа заблокирована", bad: true });
+        else out.push({ t: "продажа возможна", bad: false });
+        var st = parseFloat(d.sell_tax || 0) * 100;
+        if (st >= 10) out.push({ t: "налог на продажу " + st.toFixed(0) + "%", bad: true });
+        else out.push({ t: "налог продажи " + st.toFixed(1) + "%", bad: false });
+        if (d.is_mintable === "1") out.push({ t: "минт открыт", bad: true });
+        if (d.is_proxy === "1") out.push({ t: "прокси-контракт", warn: true });
+        if (d.is_open_source === "0") out.push({ t: "код НЕ верифицирован", bad: true });
+        if (d.cannot_sell_all === "1") out.push({ t: "нельзя продать всё", bad: true });
+      }
+      return out;
+    }).catch(function () { return null; });
+  }
+
+  function renderSecChips(container, checks, gtLink) {
+    if (checks === null) {
+      container.innerHTML = '<span class="chip warn2">экспресс-проверка недоступна</span>' +
+        (gtLink ? ' <a href="' + gtLink + '" target="_blank" rel="noopener" style="font-size:11px">проверить вручную →</a>' : "");
+      return;
+    }
+    container.innerHTML = checks.map(function (c) {
+      return '<span class="chip ' + (c.bad ? "bad" : c.warn ? "warn2" : "ok") + '">' + esc(c.t) + '</span>';
+    }).join("");
+  }
+
+  // ── Табло ──────────────────────────────────────────────
+  function showBoard(kind, name, metaHtml) {
+    var board = document.getElementById("alertBoard");
+    board.classList.toggle("narrative", kind === "narrative");
+    document.getElementById("alertLabel").textContent =
+      kind === "narrative" ? "НАРРАТИВ · ТОКЕН ИЗ ПОСТА" : "КАНДИДАТ ОБНАРУЖЕН";
+    document.getElementById("alertName").textContent = name;
+    document.getElementById("alertMeta").innerHTML = metaHtml;
+    document.getElementById("alertSec").innerHTML = "";
+    board.classList.remove("show");
+    void board.offsetWidth; // перезапуск анимации
+    board.classList.add("show");
+    if (sound) { beep(kind === "narrative" ? 660 : 880); setTimeout(function () { beep(kind === "narrative" ? 880 : 1174); }, 250); }
+  }
+  function pushNotif(title, body) {
+    if (notify && "Notification" in window && Notification.permission === "granted") {
+      try { new Notification(title, { body: body }); } catch (e) {}
+    }
+  }
+
+  function fireCandidate(p, ev) {
+    showBoard("candidate", p._sym || p._name,
+      esc(p._name) + " · " + NETS[p._net].label + " · счёт " + ev.score + "/100 · ликв " + usd(ev.liq) +
+      " · покупателей " + ev.buyers +
+      ' · <a href="https://www.geckoterminal.com/' + p._net + '/pools/' + esc(p._addr) +
+      '" target="_blank" rel="noopener">GeckoTerminal →</a>' +
+      deployerLinks(p._net, p._tokAddr) +
+      exitPlan(p.attributes.base_token_price_usd));
+    addJournal(p, "scoring");
+    pushNotif("Scout · " + NETS[p._net].label + ": " + (p._sym || p._name),
+      "Кандидат · счёт " + ev.score + " · ликв " + usd(ev.liq));
+    securityCheck(p._net, p._tokAddr).then(function (checks) {
+      renderSecChips(document.getElementById("alertSec"), checks,
+        "https://www.geckoterminal.com/" + p._net + "/pools/" + p._addr);
+    });
+  }
+
+  // ── Нарративный контур (контур 2, без порогов) ─────────
+  function narrativeAlert(p, sourceLabel) {
+    var a = p.attributes;
+    showBoard("narrative", p._sym || p._name,
+      esc(p._name) + " · " + NETS[p._net].label + " · источник: " + esc(sourceLabel) +
+      " · возраст пула " + age(a.pool_created_at) +
+      " · ликв " + usd(a.reserve_in_usd) + " · FDV " + usd(a.fdv_usd) +
+      ' · <a href="https://www.geckoterminal.com/' + p._net + '/pools/' + esc(p._addr) +
+      '" target="_blank" rel="noopener">GeckoTerminal →</a>' +
+      deployerLinks(p._net, p._tokAddr) +
+      exitPlan(a.base_token_price_usd));
+    addJournal(p, "narrative");
+    pushNotif("Scout · НАРРАТИВ: " + (p._sym || p._name),
+      NETS[p._net].label + " · из: " + sourceLabel);
+    securityCheck(p._net, p._tokAddr).then(function (checks) {
+      renderSecChips(document.getElementById("alertSec"), checks,
+        "https://www.geckoterminal.com/" + p._net + "/pools/" + p._addr);
+    });
+  }
+
+  function netFromPoolId(id) {
+    var pre = (id || "").split("_")[0];
+    if (pre === "base" || pre === "solana" || pre === "eth") return pre;
+    return null;
+  }
+
+  // Поиск токена по тикеру: берём самый свежий пул с точным совпадением символа
+  function searchTicker(sym, sourceLabel) {
+    sym = sym.replace(/^\$/, "").trim();
+    if (!sym) return;
+    log("Ищу токен: <b>" + esc(sym) + "</b> (из: " + esc(sourceLabel) + ")");
+    getJson(API + "/search/pools?query=" + encodeURIComponent(sym) + "&include=base_token")
+      .then(function (j) {
+        var tokens = indexTokens(j);
+        var hits = (j.data || []).map(function (p) {
+          p._net = netFromPoolId(p.id);
+          return p._net ? decorate(p, tokens) : null;
+        }).filter(function (p) {
+          return p && (p._sym || "").toUpperCase() === sym.toUpperCase();
+        });
+        if (!hits.length) { log("«" + esc(sym) + "»: пулов в Base/Solana/Eth не найдено"); return; }
+        hits.sort(function (x, y) {
+          return new Date(y.attributes.pool_created_at) - new Date(x.attributes.pool_created_at);
+        });
+        var p = hits[0];
+        pools[p._net + "_" + p._addr] = p;
+        narrativeAlert(p, sourceLabel);
+        render();
+      })
+      .catch(function (e) { log("Поиск «" + esc(sym) + "» не удался: " + esc(e.message)); });
+  }
+
+  // Проверка по адресу контракта
+  function searchAddress(addr, sourceLabel) {
+    var isEvm = /^0x[a-fA-F0-9]{40}$/.test(addr);
+    var netsToTry = isEvm ? ["base", "eth"] : ["solana"];
+    log("Ищу контракт " + esc(addr.slice(0, 10)) + "… (из: " + esc(sourceLabel) + ")");
+    (function tryNext(i) {
+      if (i >= netsToTry.length) { log("Контракт не найден в отслеживаемых сетях"); return; }
+      var net = netsToTry[i];
+      getJson(API + "/networks/" + net + "/tokens/" + addr + "/pools?include=base_token")
+        .then(function (j) {
+          if (!(j.data || []).length) return tryNext(i + 1);
+          var tokens = indexTokens(j);
+          var p = decorate(j.data[0], tokens);
+          p._net = net;
+          p._tokAddr = addr;
+          pools[net + "_" + p._addr] = p;
+          narrativeAlert(p, sourceLabel);
+          render();
+        })
+        .catch(function () { tryNext(i + 1); });
+    })(0);
+  }
+
+  function extractAndCheck(text, sourceLabel) {
+    var found = false;
+    var cash = text.match(/\$[A-Za-z][A-Za-z0-9]{1,9}\b/g) || [];
+    cash.slice(0, 3).forEach(function (c) { found = true; searchTicker(c, sourceLabel); });
+    var evm = text.match(/0x[a-fA-F0-9]{40}\b/g) || [];
+    evm.slice(0, 2).forEach(function (a) { found = true; searchAddress(a, sourceLabel); });
+    var sol = text.match(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g) || [];
+    sol.slice(0, 2).forEach(function (a) {
+      if (!/^0x/.test(a)) { found = true; searchAddress(a, sourceLabel); }
+    });
+    return found;
+  }
+
+  // ── Опрос RSS-лент через CORS-прокси ───────────────────
+  function pollFeeds() {
+    sources.forEach(function (src) {
+      fetch(PROXY + encodeURIComponent(src))
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (xmlText) {
+          var doc = new DOMParser().parseFromString(xmlText, "text/xml");
+          var items = doc.querySelectorAll("item, entry");
+          var label = (doc.querySelector("channel > title, feed > title") || {}).textContent || src;
+          var isFirst = !seenItems[src];
+          if (isFirst) seenItems[src] = {};
+          Array.prototype.slice.call(items, 0, 15).forEach(function (it) {
+            var guid = (it.querySelector("guid, id, link") || {}).textContent ||
+                       (it.querySelector("title") || {}).textContent || "";
+            if (!guid || seenItems[src][guid]) return;
+            seenItems[src][guid] = true;
+            if (isFirst) return; // первый проход — только запоминаем, алертим лишь новое
+            var text = ((it.querySelector("title") || {}).textContent || "") + " " +
+                       ((it.querySelector("description, summary, content") || {}).textContent || "");
+            var hit = extractAndCheck(text, label);
+            if (!hit) log("Новый пост в «" + esc(label) + "» — тикеров/адресов не найдено");
+          });
+        })
+        .catch(function (e) { log("Лента недоступна: " + esc(src.slice(0, 40)) + "… (" + esc(String(e.message)) + ")"); });
+    });
+  }
+
+  // ── Рендер ─────────────────────────────────────────────
+  function render() {
+    var arr = Object.keys(pools).map(function (k) {
+      var p = pools[k];
+      p._ev = evaluate(p);
+      return p;
+    });
+    var order = { candidate: 0, watch: 1, quiet: 2, flag: 3 };
+    arr.sort(function (x, y) {
+      return (order[x._ev.tier] - order[y._ev.tier]) || (y._ev.score - x._ev.score);
+    });
+    var candAll = arr.filter(function (p) { return p._ev.tier === "candidate"; });
+    for (var i = 0; i < candAll.length; i++) {
+      var key = candAll[i]._net + "_" + candAll[i]._addr;
+      if (!alerted[key]) { alerted[key] = true; fireCandidate(candAll[i], candAll[i]._ev); break; }
+    }
+
+    var vis = arr.filter(function (p) { return netFilter === "all" || p._net === netFilter; });
+    document.getElementById("cntAll").textContent = vis.length;
+    document.getElementById("cntCand").textContent =
+      vis.filter(function (p) { return p._ev.tier === "candidate"; }).length;
+    document.getElementById("cntFlag").textContent =
+      vis.filter(function (p) { return p._ev.tier === "flag"; }).length;
+
+    var list = document.getElementById("list");
+    if (!vis.length) {
+      list.innerHTML = '<div class="empty">В этой сети пока пусто — данные копятся с каждым циклом.</div>';
+      return;
+    }
+    var tierName = { candidate: "КАНДИДАТ", watch: "НАБЛЮДЕНИЕ", quiet: "ТИХО", flag: "ФЛАГ" };
+    list.innerHTML = vis.slice(0, 90).map(function (p) {
+      var ev = p._ev;
+      var chips = ev.flags.map(function (f) { return '<span class="chip bad">' + esc(f) + '</span>'; })
+        .concat(ev.chips.map(function (c) { return '<span class="chip ok">' + esc(c) + '</span>'; }))
+        .join("");
+      return '<a class="card tier-' + ev.tier + '" target="_blank" rel="noopener noreferrer" ' +
+        'href="https://www.geckoterminal.com/' + p._net + '/pools/' + esc(p._addr) + '">' +
+        '<div class="card-top">' +
+          '<span class="tk">' + esc(p._sym || "?") + '</span>' +
+          '<span class="nettag nt-' + p._net + '">' + NETS[p._net].label + '</span>' +
+          '<span class="nm">' + esc(p._name) + ' · ' + age(p.attributes.pool_created_at) + '</span>' +
+          '<span class="score">' + tierName[ev.tier] + (ev.tier === "flag" ? "" : " " + ev.score) + '</span>' +
+        '</div>' +
+        '<div class="metrics">' +
+          '<span>Ликв <b>' + usd(ev.liq) + '</b></span>' +
+          '<span>Объём 24ч <b>' + usd(ev.vol24) + '</b></span>' +
+          '<span>Покупателей <b>' + ev.buyers + '</b></span>' +
+          '<span>Покупки/продажи <b>' + ev.buys + "/" + ev.sells + '</b></span>' +
+          '<span>FDV <b>' + usd(ev.fdv) + '</b></span>' +
+        '</div>' +
+        '<div class="chips">' + chips + '</div>' +
+      '</a>';
+    }).join("");
+  }
+
+  function renderSources() {
+    var box = document.getElementById("srcList");
+    document.getElementById("cntSrc").textContent = sources.length;
+    box.innerHTML = sources.map(function (s, i) {
+      return '<div class="src-item"><button class="del" data-i="' + i + '" title="Удалить">✕</button>' +
+             '<span>' + esc(s) + '</span></div>';
+    }).join("");
+  }
+
+  function setStatus(s) { document.getElementById("statusLine").textContent = s; }
+  function showError(m) {
+    var b = document.getElementById("errBox");
+    b.textContent = m; b.style.display = "block";
+    document.getElementById("dot").className = "dot err";
+  }
+  function hideError() {
+    document.getElementById("errBox").style.display = "none";
+    document.getElementById("dot").className = running ? "dot run" : "dot paused";
+  }
+
+  // ── Управление ─────────────────────────────────────────
+  document.getElementById("quickBtn").addEventListener("click", function () {
+    var v = document.getElementById("quickCheck").value.trim();
+    if (!v) return;
+    if (/^0x[a-fA-F0-9]{40}$/.test(v) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v)) {
+      searchAddress(v, "ручная проверка");
+    } else {
+      searchTicker(v, "ручная проверка");
+    }
+    document.getElementById("quickCheck").value = "";
+  });
+  document.getElementById("quickCheck").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("quickBtn").click();
+  });
+
+  document.getElementById("srcAdd").addEventListener("click", function () {
+    var v = document.getElementById("srcInput").value.trim();
+    if (!v || !/^https?:\/\//.test(v)) { log("Нужен полный URL ленты (https://…)"); return; }
+    if (sources.indexOf(v) !== -1) return;
+    sources.push(v);
+    store.set(sources);
+    renderSources();
+    document.getElementById("srcInput").value = "";
+    log("Источник добавлен, первый опрос запоминает историю — алерты пойдут с новых постов");
+    pollFeeds();
+  });
+  document.getElementById("srcList").addEventListener("click", function (e) {
+    var btn = e.target.closest(".del");
+    if (!btn) return;
+    sources.splice(parseInt(btn.dataset.i, 10), 1);
+    store.set(sources);
+    renderSources();
+  });
+
+  document.getElementById("netBar").addEventListener("click", function (e) {
+    var btn = e.target.closest("button");
+    if (!btn) return;
+    netFilter = btn.dataset.net;
+    this.querySelectorAll("button").forEach(function (b) { b.classList.remove("sel"); });
+    btn.classList.add("sel");
+    render();
+  });
+
+  document.getElementById("soundBtn").addEventListener("click", function () {
+    sound = !sound;
+    this.textContent = sound ? "🔔 Звук" : "🔕 Звук";
+    this.classList.toggle("on", sound);
+    if (sound) beep(880);
+  });
+
+  document.getElementById("notifBtn").addEventListener("click", function () {
+    var self = this;
+    if (!("Notification" in window)) { self.textContent = "⛔ Нет поддержки"; return; }
+    if (notify) {
+      notify = false;
+      self.textContent = "🔕 Уведомления"; self.classList.remove("on");
+      return;
+    }
+    Notification.requestPermission().then(function (perm) {
+      notify = perm === "granted";
+      self.textContent = notify ? "🔔 Уведомления" : "⛔ Запрещено";
+      self.classList.toggle("on", notify);
+    });
+  });
+
+  document.getElementById("pauseBtn").addEventListener("click", function () {
+    running = !running;
+    this.textContent = running ? "⏸ Пауза" : "▶ Возобновить";
+    this.classList.toggle("paused", !running);
+    document.getElementById("dot").className = running ? "dot run" : "dot paused";
+    if (timer) clearInterval(timer);
+    if (feedTimer) clearInterval(feedTimer);
+    if (running) {
+      poll(); pollFeeds();
+      timer = setInterval(poll, POLL_MS);
+      feedTimer = setInterval(pollFeeds, FEED_MS);
+    } else setStatus("Пауза");
+  });
+
+  try {
+    var manifest = {
+      name: "Launch Scout", short_name: "Scout",
+      start_url: location.href, display: "standalone",
+      background_color: "#0A0F1A", theme_color: "#0A0F1A",
+      icons: [{ src: "data:image/png;base64,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", sizes: "512x512", type: "image/png" }]
+    };
+    var link = document.createElement("link");
+    link.rel = "manifest";
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: "application/json" }));
+    document.head.appendChild(link);
+  } catch (e) {}
+
+  document.getElementById("exportBtn").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(journal, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "scout-journal-" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+  });
+  document.getElementById("clearBtn").addEventListener("click", function () {
+    if (!confirm("Стереть весь журнал исходов? Это нельзя отменить.")) return;
+    journal = [];
+    jstore.set(journal);
+    renderStats();
+  });
+
+  sources = store.get();
+  journal = jstore.get();
+  renderSources();
+  renderStats();
+  poll(); pollFeeds();
+  timer = setInterval(poll, POLL_MS);
+  feedTimer = setInterval(pollFeeds, FEED_MS);
+})();
+</script>
+</body>
+</html>
