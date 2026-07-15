@@ -11,9 +11,9 @@ const CHAT = process.env.TELEGRAM_CHAT_ID;
 const STATE_FILE = "state.json";
 
 const NETS = {
-  base:   { label: "Base",     liq: [50000, 500000],   gp: "8453" },
-  solana: { label: "Solana",   liq: [30000, 300000],   gp: "solana" },
-  eth:    { label: "Ethereum", liq: [100000, 1000000], gp: "1" },
+  base:   { label: "Base",     liq: [20000, 300000],   gp: "8453" },
+  solana: { label: "Solana",   liq: [20000, 300000],   gp: "solana" },
+  eth:    { label: "Ethereum", liq: [50000, 1000000], gp: "1" },
 };
 
 // ── Состояние: кого уже алертили + трендовые тикеры ──────
