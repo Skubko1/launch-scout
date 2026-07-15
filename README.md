@@ -1,0 +1,2 @@
+# launch-scout
+Scout bot
