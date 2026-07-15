@@ -1,0 +1,37 @@
+name: Launch Scout Bot
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # каждые 10 минут (реальный интервал у GitHub может плавать)
+  workflow_dispatch:          # кнопка ручного запуска во вкладке Actions
+
+permissions:
+  contents: write             # чтобы коммитить state.json обратно
+
+concurrency:
+  group: scout
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Скан трёх сетей и отправка алертов
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scout-bot.mjs
+
+      - name: Сохранить состояние (кого уже алертили)
+        run: |
+          git config user.name "scout-bot"
+          git config user.email "actions@github.com"
+          git add state.json
+          git diff --cached --quiet || git commit -m "scout: обновление состояния [skip ci]"
+          git push
