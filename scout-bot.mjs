@@ -79,15 +79,23 @@ function evaluate(p, net) {
   const buyers = t24.buyers || 0, buys = t24.buys || 0, sells = t24.sells || 0;
   const ch1 = parseFloat(a.price_change_percentage?.h1) || 0;
   const ageH = (Date.now() - new Date(a.pool_created_at).getTime()) / 3600000;
+  const ch24 = parseFloat(a.price_change_percentage?.h24) || 0;
   const sym = (p._sym || "").toUpperCase();
+
+  // Ранний вход: молодым пулам нижний порог ликвидности снижен,
+  // чтобы ловить до основного пампа, а не после
+  const liqFloor = ageH < 6 ? Math.min(8000, cfg.liq[0])
+                 : ageH < 24 ? Math.min(15000, cfg.liq[0])
+                 : cfg.liq[0];
 
   let score = 0;
   const flags = [];
   if (state.trend[net][sym] && p._addr !== state.trend[net][sym]) flags.push("клон тикера");
   if (ch1 > 200 && buyers < 300) flags.push("памп без покупателей");
   if (liq < 2000 && vol24 > 20000) flags.push("ликвидность слита");
+  if (ch24 > 400) flags.push("памп уже отыгран (+" + ch24.toFixed(0) + "% за 24ч)");
 
-  if (liq >= cfg.liq[1]) score += 25; else if (liq >= cfg.liq[0]) score += 15;
+  if (liq >= cfg.liq[1]) score += 25; else if (liq >= liqFloor) score += 15;
   if (buyers >= 500) score += 25; else if (buyers >= 100) score += 15;
   if (sells > 0 && buys / sells >= 1.2) score += 15;
   if (liq > 0 && vol24 / liq >= 0.3) score += 10;
@@ -95,7 +103,7 @@ function evaluate(p, net) {
   if (fdv >= 100000 && fdv <= 500000000) score += 10;
   if (ageH >= 24 && buyers >= 300) score += 5;
 
-  return { score: flags.length ? 0 : score, flags, liq, buyers, fdv, vol24 };
+  return { score: flags.length ? 0 : score, flags, liq, buyers, fdv, vol24, ch24, ageH };
 }
 
 // ── GoPlus: проверка контракта + концентрация держателей ──
@@ -209,6 +217,7 @@ for (const { p, net, ev, key } of candidates.slice(0, 5)) {
     `🎯 <b>${p._sym}</b> · ${NETS[net].label}\n` +
     `${p._name}\n` +
     `Счёт: <b>${ev.score}/100</b> · Ликв: ${usd(ev.liq)} · Покупателей: ${ev.buyers}\n` +
+    `Возраст: ${ev.ageH < 24 ? ev.ageH.toFixed(1) + "ч" : (ev.ageH / 24).toFixed(1) + "д"} · 24ч: ${ev.ch24 >= 0 ? "+" : ""}${ev.ch24.toFixed(0)}%\n` +
     `Контракт: ${sec.text}\n` +
     (px ? `Вход: $${fpx(px)} · 50% на 2x ($${fpx(px * 2)}) · стоп −50% ($${fpx(px * 0.5)})\n` : "") +
     `https://www.geckoterminal.com/${net}/pools/${p._addr}`
@@ -229,9 +238,11 @@ for (const [net, list] of Object.entries(openByNet)) {
   for (let i = 0; i < list.length; i += 25) {
     const chunk = list.slice(i, i + 25);
     let priceMap = {};
+    let apiOk = false; // промахи считаем ТОЛЬКО при успешном ответе API
     try {
       const addrs = chunk.map(([, p]) => p.addr).join(",");
       const j = await getJson(`${API}/networks/${net}/pools/multi/${addrs}`);
+      apiOk = true;
       for (const d of j.data || []) {
         priceMap[d.attributes.address.toLowerCase()] =
           parseFloat(d.attributes.base_token_price_usd) || 0;
@@ -242,8 +253,9 @@ for (const [net, list] of Object.entries(openByNet)) {
     for (const [key, pos] of chunk) {
       const px = priceMap[pos.addr.toLowerCase()];
       if (!px) {
+        if (!apiOk) continue; // сбой API — позицию не трогаем
         pos.miss = (pos.miss || 0) + 1;
-        if (pos.miss >= 3) { // пул пропал из API — считаем, что стоп сработал
+        if (pos.miss >= 6) { // ~час подряд пула нет в API — считаем, что стоп сработал
           if (!pos.tpHit) { pos.status = "stop"; pos.pnl = -POSITION_USD / 2; }
           else { pos.status = "trail"; pos.pnl = pos.realized + (POSITION_USD / 2) - POSITION_USD; }
           pos.closedAt = Date.now();
