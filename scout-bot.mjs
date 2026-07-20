@@ -84,7 +84,7 @@ function evaluate(p, net) {
 
   // Ранний вход: молодым пулам нижний порог ликвидности снижен,
   // чтобы ловить до основного пампа, а не после
-  const liqFloor = ageH < 6 ? Math.min(8000, cfg.liq[0])
+  const liqFloor = ageH < 6 ? Math.min(12000, cfg.liq[0])
                  : ageH < 24 ? Math.min(15000, cfg.liq[0])
                  : cfg.liq[0];
 
@@ -94,6 +94,10 @@ function evaluate(p, net) {
   if (ch1 > 200 && buyers < 300) flags.push("памп без покупателей");
   if (liq < 2000 && vol24 > 20000) flags.push("ликвидность слита");
   if (ch24 > 400) flags.push("памп уже отыгран (+" + ch24.toFixed(0) + "% за 24ч)");
+  if (ageH < 2) flags.push("моложе 2ч — снайперская фаза");
+  if (ageH < 24 && ch24 < 0) flags.push("нисходящий тренд для молодого пула");
+  if (ageH < 6 && (buyers < 500 || (sells > 0 && buys / sells < 1.3)))
+    flags.push("слабое подтверждение для раннего входа");
 
   if (liq >= cfg.liq[1]) score += 25; else if (liq >= liqFloor) score += 15;
   if (buyers >= 500) score += 25; else if (buyers >= 100) score += 15;
@@ -103,7 +107,7 @@ function evaluate(p, net) {
   if (fdv >= 100000 && fdv <= 500000000) score += 10;
   if (ageH >= 24 && buyers >= 300) score += 5;
 
-  return { score: flags.length ? 0 : score, flags, liq, buyers, fdv, vol24, ch24, ageH };
+  return { score: flags.length ? 0 : score, rawScore: score, flags, liq, buyers, fdv, vol24, ch24, ageH };
 }
 
 // ── GoPlus: проверка контракта + концентрация держателей ──
@@ -167,6 +171,8 @@ async function sendTelegram(text) {
 
 // ── 1. Скан рынка и новые алерты ──────────────────────────
 const candidates = [];
+const filterStats = {}; // причина отсева -> счётчик (для лога и heartbeat)
+const nearMiss = [];    // пулы с баллом >= 60, зарезанные антимаркерами
 for (const net of Object.keys(NETS)) {
   for (const kind of ["new_pools", "trending_pools"]) {
     try {
@@ -181,6 +187,8 @@ for (const net of Object.keys(NETS)) {
         const ageDays = (Date.now() - new Date(p.attributes.pool_created_at).getTime()) / 86400000;
         if (ageDays > 60) continue;
         const ev = evaluate(p, net);
+        for (const f of ev.flags) filterStats[f] = (filterStats[f] || 0) + 1;
+        if (ev.flags.length && ev.rawScore >= 60) nearMiss.push(`${p._sym}(${net}): ${ev.flags[0]}`);
         const key = `${net}_${p._addr}`;
         if (ev.score >= 60 && !state.alerted[key]) {
           state.alerted[key] = Date.now();
@@ -213,6 +221,7 @@ for (const { p, net, ev, key } of candidates.slice(0, 5)) {
     };
   }
 
+  state.lastAlert = Date.now();
   await sendTelegram(
     `🎯 <b>${p._sym}</b> · ${NETS[net].label}\n` +
     `${p._name}\n` +
@@ -300,6 +309,21 @@ for (const [pos, msg] of closedNow) {
   await sendTelegram(`<b>${pos.sym}</b> · ${NETS[pos.net]?.label || pos.net}\n${msg}`);
 }
 
+// ── Heartbeat: сутки без сигналов — сообщаем, что живы и почему тихо ──
+state.lastAlert ||= Date.now();
+state.lastHeartbeat ||= 0;
+if (Date.now() - state.lastAlert > 24 * 3600 * 1000 &&
+    Date.now() - state.lastHeartbeat > 24 * 3600 * 1000) {
+  const top = Object.entries(filterStats).sort((a, b) => b[1] - a[1]).slice(0, 4)
+    .map(([f, n]) => `· ${f}: ${n}`).join("\n");
+  await sendTelegram(
+    `💤 Сутки без сигналов. Бот работает, кандидатов нет.\n` +
+    (nearMiss.length ? `Почти прошли:\n${nearMiss.slice(0, 5).join("\n")}\n` : "") +
+    (top ? `Отсев за прогон:\n${top}` : "Рынок пустой — пулы не проходят даже базовый скоринг.")
+  );
+  state.lastHeartbeat = Date.now();
+}
+
 // ── 3. Суточная сводка ────────────────────────────────────
 const positions = Object.values(state.positions);
 if (positions.length && Date.now() - state.lastSummary >= SUMMARY_EVERY_MS) {
@@ -348,4 +372,6 @@ for (const [k, p] of Object.entries(state.positions)) {
 }
 
 writeFileSync(STATE_FILE, JSON.stringify(state));
+if (Object.keys(filterStats).length) console.log("Отсев:", JSON.stringify(filterStats));
+if (nearMiss.length) console.log("Почти прошли:", nearMiss.slice(0, 8).join(" | "));
 console.log(`Готово: алертов ${sent}, отфильтровано ${skipped}, позиций открыто ${Object.values(state.positions).filter(p => p.status === "open").length}, закрыто сейчас ${closedNow.length}`);
