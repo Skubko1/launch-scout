@@ -1,12 +1,15 @@
-// Launch Scout Bot v2 — сканер запусков + бумажный трекинг PnL
+// Launch Scout Bot v3 — сканер запусков + бумажный трекинг PnL
 // Для GitHub Actions. Секреты: TELEGRAM_TOKEN, TELEGRAM_CHAT_ID.
-// Новое в v2:
-//  1) при алерте пишем цену входа в state.json (state.positions)
-//  2) каждый прогон проверяет открытые позиции: 2x -> фиксация 50%,
-//     дальше трейлинг 50% от пика (пол — цена входа); стоп −50%
-//  3) раз в ~20 часов шлёт сводку PnL в Telegram
-//  4) фильтры: концентрация у деплоера/топ-10 (прокси бандл-скупки),
-//     «проверка недоступна» + ликвидность < $50K -> алерт не уходит
+// Новое в v3 (фикс "?x" и −11.5%):
+//  1) ФИКС ЦЕН: retry с паузой при 429, user-agent, а если multi-запрос
+//     упал — фолбэк на одиночные запросы по каждому пулу. Раньше при
+//     любом сбое API позиции просто не обновлялись => вечные "?x".
+//  2) ФИКС ВХОДОВ: порог "памп отыгран" снижен с +400% до +150%
+//     (WHALE +366% и nice +340% больше не пройдут); добавлен фильтр
+//     "падающий нож" — ch24 <= −30% для пулов моложе 3 дней
+//     (MrSue −71% и JACOBIAN −69% больше не пройдут).
+//  3) Диагностика: счётчик сбоев цен пишется в лог и в сводку,
+//     чтобы проблема с API была видна сразу, а не через неделю.
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
@@ -16,9 +19,13 @@ const TOKEN = process.env.TELEGRAM_TOKEN;
 const CHAT = process.env.TELEGRAM_CHAT_ID;
 const STATE_FILE = "state.json";
 
-const POSITION_USD = 100;          // бумажная ставка на сигнал
+const POSITION_USD = 100;           // бумажная ставка на сигнал
 const SKIP_UNCHECKED_BELOW = 50000; // «проверка недоступна» + ликв ниже -> скип
 const SUMMARY_EVERY_MS = 20 * 3600 * 1000;
+const MAX_CH24 = 150;               // выше — считаем, что памп отыгран
+const KNIFE_CH24 = -30;             // ниже для молодых пулов — падающий нож
+const STOP_MULT = 0.5;              // стоп: −50% от входа
+const TP_MULT = 2;                  // фиксация 50% на 2x
 
 const NETS = {
   base:   { label: "Base",     liq: [20000, 300000],  gp: "8453" },
@@ -44,11 +51,26 @@ const usd = (n) => {
   return "$" + n.toFixed(0);
 };
 const fpx = (n) => (n >= 1 ? n.toFixed(4) : n >= 0.0001 ? n.toFixed(6) : n.toExponential(2));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function getJson(url) {
-  const r = await fetch(url, { headers: { accept: "application/json" } });
-  if (!r.ok) throw new Error(`${url} -> ${r.status}`);
-  return r.json();
+// v3: retry при 429/5xx + явный user-agent (Actions-IP часто режут по UA)
+async function getJson(url, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "launch-scout-bot/3.0" },
+      });
+      if (r.ok) return r.json();
+      lastErr = new Error(`${url} -> ${r.status}`);
+      if (r.status === 429 || r.status >= 500) { await sleep(12000 * (i + 1)); continue; }
+      throw lastErr;
+    } catch (e) {
+      lastErr = e;
+      await sleep(5000 * (i + 1));
+    }
+  }
+  throw lastErr;
 }
 
 function decorate(p, tokens) {
@@ -67,7 +89,7 @@ function indexTokens(json) {
   return map;
 }
 
-// ── Скоринг (как в веб-приложении) ────────────────────────
+// ── Скоринг ───────────────────────────────────────────────
 function evaluate(p, net) {
   const a = p.attributes;
   const cfg = NETS[net];
@@ -82,8 +104,7 @@ function evaluate(p, net) {
   const ch24 = parseFloat(a.price_change_percentage?.h24) || 0;
   const sym = (p._sym || "").toUpperCase();
 
-  // Ранний вход: молодым пулам нижний порог ликвидности снижен,
-  // чтобы ловить до основного пампа, а не после
+  // Ранний вход: молодым пулам нижний порог ликвидности снижен
   const liqFloor = ageH < 6 ? Math.min(12000, cfg.liq[0])
                  : ageH < 24 ? Math.min(15000, cfg.liq[0])
                  : cfg.liq[0];
@@ -93,7 +114,10 @@ function evaluate(p, net) {
   if (state.trend[net][sym] && p._addr !== state.trend[net][sym]) flags.push("клон тикера");
   if (ch1 > 200 && buyers < 300) flags.push("памп без покупателей");
   if (liq < 2000 && vol24 > 20000) flags.push("ликвидность слита");
-  if (ch24 > 400) flags.push("памп уже отыгран (+" + ch24.toFixed(0) + "% за 24ч)");
+  // v3: было >400 — пропускало входы на вершине (+340…+366%)
+  if (ch24 > MAX_CH24) flags.push("памп уже отыгран (+" + ch24.toFixed(0) + "% за 24ч)");
+  // v3: падающий нож — раньше −70% за сутки проходило, если пул старше 24ч
+  if (ch24 <= KNIFE_CH24 && ageH < 72) flags.push("падающий нож (" + ch24.toFixed(0) + "% за 24ч)");
   if (ageH < 2) flags.push("моложе 2ч — снайперская фаза");
   if (ageH < 24 && ch24 < 0) flags.push("нисходящий тренд для молодого пула");
   if (ageH < 6 && (buyers < 500 || (sells > 0 && buys / sells < 1.3)))
@@ -111,7 +135,6 @@ function evaluate(p, net) {
 }
 
 // ── GoPlus: проверка контракта + концентрация держателей ──
-// Возвращает { text, hardFail } — hardFail=true значит алерт не отправляем.
 async function securityCheck(net, addr) {
   if (!addr) return { text: "проверка недоступна", unavailable: true, hardFail: false };
   try {
@@ -124,7 +147,7 @@ async function securityCheck(net, addr) {
     const bad = [];
     let hardFail = false;
 
-    // Концентрация — прокси бандл-скупки/дев-холдинга (кейс SUNUSI)
+    // Концентрация — прокси бандл-скупки/дев-холдинга
     try {
       const creatorPct = parseFloat(d.creator_percent ?? d.creator_percentage ?? 0) || 0;
       const ownerPct = parseFloat(d.owner_percent ?? 0) || 0;
@@ -132,7 +155,7 @@ async function securityCheck(net, addr) {
       if (Array.isArray(d.holders)) {
         top10 = d.holders.slice(0, 10)
           .reduce((s, h) => s + (parseFloat(h.percent ?? h.percentage ?? 0) || 0), 0);
-        if (top10 <= 1.01) top10 *= 100; // GoPlus кое-где отдаёт доли, кое-где проценты
+        if (top10 <= 1.01) top10 *= 100;
       }
       if (creatorPct * (creatorPct <= 1 ? 100 : 1) >= 10) { bad.push("деплоер держит ≥10%"); hardFail = true; }
       if (ownerPct * (ownerPct <= 1 ? 100 : 1) >= 10) { bad.push("владелец держит ≥10%"); hardFail = true; }
@@ -171,8 +194,8 @@ async function sendTelegram(text) {
 
 // ── 1. Скан рынка и новые алерты ──────────────────────────
 const candidates = [];
-const filterStats = {}; // причина отсева -> счётчик (для лога и heartbeat)
-const nearMiss = [];    // пулы с баллом >= 60, зарезанные антимаркерами
+const filterStats = {};
+const nearMiss = [];
 for (const net of Object.keys(NETS)) {
   for (const kind of ["new_pools", "trending_pools"]) {
     try {
@@ -206,14 +229,12 @@ for (const { p, net, ev, key } of candidates.slice(0, 5)) {
   const sec = await securityCheck(net, p._tokAddr);
   const px = parseFloat(p.attributes.base_token_price_usd) || 0;
 
-  // Фильтр 4: слепые токены с тонкой ликвидностью и жёсткие красные флаги
   if ((sec.unavailable && ev.liq < SKIP_UNCHECKED_BELOW) || sec.hardFail) {
     skipped++;
     console.log(`skip ${p._sym} (${net}): ${sec.text}, liq=${usd(ev.liq)}`);
-    continue; // key остаётся в alerted — повторно не проверяем
+    continue;
   }
 
-  // Пункт 1: открываем бумажную позицию с ценой входа
   if (px > 0) {
     state.positions[key] = {
       sym: p._sym, net, addr: p._addr, entry: px, peak: px,
@@ -228,26 +249,28 @@ for (const { p, net, ev, key } of candidates.slice(0, 5)) {
     `Счёт: <b>${ev.score}/100</b> · Ликв: ${usd(ev.liq)} · Покупателей: ${ev.buyers}\n` +
     `Возраст: ${ev.ageH < 24 ? ev.ageH.toFixed(1) + "ч" : (ev.ageH / 24).toFixed(1) + "д"} · 24ч: ${ev.ch24 >= 0 ? "+" : ""}${ev.ch24.toFixed(0)}%\n` +
     `Контракт: ${sec.text}\n` +
-    (px ? `Вход: $${fpx(px)} · 50% на 2x ($${fpx(px * 2)}) · стоп −50% ($${fpx(px * 0.5)})\n` : "") +
+    (px ? `Вход: $${fpx(px)} · 50% на 2x ($${fpx(px * TP_MULT)}) · стоп −50% ($${fpx(px * STOP_MULT)})\n` : "") +
     `https://www.geckoterminal.com/${net}/pools/${p._addr}`
   );
   sent++;
 }
 
 // ── 2. Трекинг открытых позиций ───────────────────────────
-// Правила на $100: до 2x стоп −50%; на 2x продаём половину (возврат $100),
-// остаток — трейлинг 50% от пика, но не ниже цены входа.
+// v3: multi-запрос с фолбэком на одиночные. priceFails копится для диагностики.
 const openByNet = {};
 for (const [key, pos] of Object.entries(state.positions)) {
   if (pos.status === "open") (openByNet[pos.net] ||= []).push([key, pos]);
 }
 
+let priceFails = 0, priceOk = 0;
 const closedNow = [];
 for (const [net, list] of Object.entries(openByNet)) {
   for (let i = 0; i < list.length; i += 25) {
     const chunk = list.slice(i, i + 25);
     let priceMap = {};
-    let apiOk = false; // промахи считаем ТОЛЬКО при успешном ответе API
+    let apiOk = false;
+
+    // Попытка 1: batch-запрос
     try {
       const addrs = chunk.map(([, p]) => p.addr).join(",");
       const j = await getJson(`${API}/networks/${net}/pools/multi/${addrs}`);
@@ -257,14 +280,34 @@ for (const [net, list] of Object.entries(openByNet)) {
           parseFloat(d.attributes.base_token_price_usd) || 0;
       }
     } catch (e) {
-      console.error(`price check ${net}:`, e.message);
+      console.error(`price multi ${net}:`, e.message);
     }
+
+    // Попытка 2 (v3): фолбэк по одному пулу, если batch упал
+    if (!apiOk) {
+      let anyOk = false;
+      for (const [, pos] of chunk) {
+        try {
+          const j = await getJson(`${API}/networks/${net}/pools/${pos.addr}`, 2);
+          priceMap[pos.addr.toLowerCase()] =
+            parseFloat(j.data?.attributes?.base_token_price_usd) || 0;
+          anyOk = true;
+        } catch (e) {
+          // 404 => пула нет: оставляем без цены, miss-логика ниже посчитает
+          if (String(e.message).includes("404")) { priceMap[pos.addr.toLowerCase()] = 0; anyOk = true; }
+          else console.error(`price single ${net}/${pos.sym}:`, e.message);
+        }
+        await sleep(1500); // бережём rate-limit
+      }
+      apiOk = anyOk;
+    }
+
     for (const [key, pos] of chunk) {
       const px = priceMap[pos.addr.toLowerCase()];
       if (!px) {
-        if (!apiOk) continue; // сбой API — позицию не трогаем
+        if (!apiOk) { priceFails++; continue; } // сбой API — позицию не трогаем
         pos.miss = (pos.miss || 0) + 1;
-        if (pos.miss >= 6) { // ~час подряд пула нет в API — считаем, что стоп сработал
+        if (pos.miss >= 6) {
           if (!pos.tpHit) { pos.status = "stop"; pos.pnl = -POSITION_USD / 2; }
           else { pos.status = "trail"; pos.pnl = pos.realized + (POSITION_USD / 2) - POSITION_USD; }
           pos.closedAt = Date.now();
@@ -272,16 +315,17 @@ for (const [net, list] of Object.entries(openByNet)) {
         }
         continue;
       }
+      priceOk++;
       pos.miss = 0;
       const qty = POSITION_USD / pos.entry;
 
       if (!pos.tpHit) {
-        if (px >= pos.entry * 2) {
+        if (px >= pos.entry * TP_MULT) {
           pos.tpHit = true;
-          pos.realized = POSITION_USD; // половина продана по 2x
+          pos.realized = POSITION_USD;
           pos.peak = px;
           closedNow.push([pos, `✅ достиг 2x — 50% зафиксировано ($${POSITION_USD}), остаток в трейлинге`]);
-        } else if (px <= pos.entry * 0.5) {
+        } else if (px <= pos.entry * STOP_MULT) {
           pos.status = "stop";
           pos.pnl = -POSITION_USD / 2;
           pos.closedAt = Date.now();
@@ -301,6 +345,7 @@ for (const [net, list] of Object.entries(openByNet)) {
         }
       }
       pos.last = px;
+      pos.lastSeen = Date.now();
     }
   }
 }
@@ -309,7 +354,20 @@ for (const [pos, msg] of closedNow) {
   await sendTelegram(`<b>${pos.sym}</b> · ${NETS[pos.net]?.label || pos.net}\n${msg}`);
 }
 
-// ── Heartbeat: сутки без сигналов — сообщаем, что живы и почему тихо ──
+// v3: если цены не получены НИ по одной позиции — кричим об этом в Telegram
+// (раз в 24ч), а не молчим неделями с "?x"
+state.lastPriceFailPing ||= 0;
+if (priceFails > 0 && priceOk === 0 &&
+    Date.now() - state.lastPriceFailPing > 24 * 3600 * 1000) {
+  await sendTelegram(
+    `⚠️ Не удалось получить цены ни по одной из ${priceFails} открытых позиций.\n` +
+    `GeckoTerminal, похоже, режет запросы (rate-limit/блок). Трекинг PnL стоит.\n` +
+    `Проверь логи Actions: "price multi" / "price single".`
+  );
+  state.lastPriceFailPing = Date.now();
+}
+
+// ── Heartbeat: сутки без сигналов ─────────────────────────
 state.lastAlert ||= Date.now();
 state.lastHeartbeat ||= 0;
 if (Date.now() - state.lastAlert > 24 * 3600 * 1000 &&
@@ -340,6 +398,7 @@ if (positions.length && Date.now() - state.lastSummary >= SUMMARY_EVERY_MS) {
   const stops = closed.filter((p) => p.status === "stop").length;
   const invested = positions.length * POSITION_USD;
   const total = realizedPnl + unreal;
+  const stale = open.filter((p) => !p.last).length;
 
   const openLines = open
     .sort((a, b) => (b.last / b.entry || 0) - (a.last / a.entry || 0))
@@ -357,6 +416,7 @@ if (positions.length && Date.now() - state.lastSummary >= SUMMARY_EVERY_MS) {
     `Реализовано: ${realizedPnl >= 0 ? "+" : ""}$${realizedPnl.toFixed(0)} · ` +
     `Нереализовано: ${unreal >= 0 ? "+" : ""}$${unreal.toFixed(0)}\n` +
     `<b>Итог: ${total >= 0 ? "+" : ""}$${total.toFixed(0)} на $${invested} (${((total / invested) * 100).toFixed(1)}%)</b>` +
+    (stale ? `\n⚠️ Без цены: ${stale} позиций (проблема с API)` : "") +
     (openLines ? `\n\nОткрытые:\n${openLines}` : "")
   );
   state.lastSummary = Date.now();
@@ -374,4 +434,4 @@ for (const [k, p] of Object.entries(state.positions)) {
 writeFileSync(STATE_FILE, JSON.stringify(state));
 if (Object.keys(filterStats).length) console.log("Отсев:", JSON.stringify(filterStats));
 if (nearMiss.length) console.log("Почти прошли:", nearMiss.slice(0, 8).join(" | "));
-console.log(`Готово: алертов ${sent}, отфильтровано ${skipped}, позиций открыто ${Object.values(state.positions).filter(p => p.status === "open").length}, закрыто сейчас ${closedNow.length}`);
+console.log(`Готово: алертов ${sent}, отфильтровано ${skipped}, цены ok=${priceOk}/fail=${priceFails}, позиций открыто ${Object.values(state.positions).filter(p => p.status === "open").length}, закрыто сейчас ${closedNow.length}`);
